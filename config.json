@@ -1,0 +1,17 @@
+{
+  "timezone": "Asia/Kolkata",
+  "dailyCap": 30,
+  "minimumScore": 62,
+  "maxJobsToPreparePerRun": 40,
+  "headless": true,
+  "autoSubmitEnabled": true,
+  "approvedSubmissionHosts": [],
+  "approvedCompanies": [],
+  "maxSubmissionsPerRun": 30,
+  "delayBetweenSubmissionsMs": 6000,
+  "sourceDelayMs": 500,
+  "sources": {
+    "lever": ["merklescience", "thinkahead", "hevodata", "weekdayworks", "Sprinto", "jobtwine"],
+    "greenhouse": ["enterpret", "scopely"]
+  }
+}

@@ -1,0 +1,96 @@
+name: Daily internship agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Use discover for a safe first test; run for the full permitted workflow"
+        required: true
+        default: discover
+        type: choice
+        options:
+          - discover
+          - run
+  schedule:
+    # 09:00 IST = 03:30 UTC. GitHub may start scheduled runs later.
+    - cron: "30 3 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: internship-daily-agent
+  cancel-in-progress: false
+
+jobs:
+  internship-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      HEADLESS: "true"
+      GITHUB_STATE_SYNC: "true"
+      GITHUB_TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+
+    steps:
+      - name: Check out private repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install packages
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright browser
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'run' }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Restore private applicant profile from Actions secret
+        env:
+          PROFILE_JSON_B64: ${{ secrets.PROFILE_JSON_B64 }}
+        run: |
+          if [ -z "$PROFILE_JSON_B64" ]; then
+            echo "::error::Add the PROFILE_JSON_B64 repository secret before running."
+            exit 1
+          fi
+          python3 - <<'PYBLOCK'
+          import os,base64,json
+          from pathlib import Path
+          profile=base64.b64decode(os.environ['PROFILE_JSON_B64'],validate=True)
+          json.loads(profile)
+          Path('profile.json').write_bytes(profile)
+          PYBLOCK
+
+      - name: Run offline unit tests
+        run: npm test
+
+      - name: Discover / prepare / apply (when explicitly permitted)
+        env:
+          MODE: ${{ inputs.mode || 'run' }}
+        run: |
+          case "$MODE" in
+            discover) npm run discover ;;
+            run) npm run run ;;
+            *) echo "Unexpected mode" >&2; exit 1 ;;
+          esac
+
+      - name: Save tracker as a private workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-tracker-${{ github.run_number }}
+          path: output/application_tracker.csv
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Persist application state to the private repository
+        if: always()
+        run: |
+          if [ -f data/state.json ]; then
+            node scripts/checkpoint-state.js
+          fi

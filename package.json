@@ -1,0 +1,21 @@
+{
+  "name": "internship-application-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Truthful internship matching, resume preparation and opt-in ATS form automation",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "discover": "node src/index.js discover",
+    "prepare": "node src/index.js prepare",
+    "apply": "node src/index.js apply",
+    "run": "node src/index.js run",
+    "report": "node src/index.js report",
+    "demo": "node scripts/demo-server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "playwright": "^1.56.1"
+  }
+}

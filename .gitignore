@@ -1,0 +1,7 @@
+node_modules/
+.env
+output/
+data/
+assets/*.pdf
+profile.json
+*.log

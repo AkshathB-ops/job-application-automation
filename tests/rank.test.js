@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {assess} from '../src/rank.js';
+import {getJSON} from '../src/util.js';
+const profile=getJSON('profile.json');
+const config=getJSON('config.json');
+const base={title:'Software Engineer Intern - Backend',location:'Bengaluru, India',workplaceType:'hybrid',description:'Work with Node.js, PostgreSQL, TypeScript, Git and Python.'};
+test('matches Bengaluru hybrid engineering intern',()=>{const r=assess(base,profile,config);assert.equal(r.decision,'eligible');assert.ok(r.score>=62);});
+test('rejects unsuitable graduating year',()=>{const r=assess({...base,description:base.description+' Only graduating in 2027 eligible.'},profile,config);assert.equal(r.decision,'ineligible');assert.ok(r.flags.includes('graduation_year_mismatch'));});
+test('rejects institution-only requirement',()=>{const r=assess({...base,description:base.description+' From IIT / NIT / IIIT only.'},profile,config);assert.equal(r.decision,'ineligible');});
+test('rejects on-site work',()=>{const r=assess({...base,workplaceType:'on-site',description:base.description},profile,config);assert.equal(r.decision,'ineligible');assert.ok(r.flags.includes('onsite_excluded'));});
+test('rejects full-time non-intern',()=>{const r=assess({...base,title:'Senior Software Engineer'},profile,config);assert.equal(r.decision,'ineligible');});
+test('holds remote jobs with unclear India eligibility',()=>{const r=assess({...base,location:'Remote',workplaceType:'remote'},profile,config);assert.equal(r.decision,'needs_eligibility_review');});
+test('allows India remote AI/ML intern',()=>{const r=assess({...base,title:'Machine Learning Engineer Intern',location:'Remote - India',workplaceType:'remote',description:'PyTorch Python FastAPI ConvNeXt; university students'},profile,config);assert.equal(r.decision,'eligible');assert.equal(r.track,'aiml');});
